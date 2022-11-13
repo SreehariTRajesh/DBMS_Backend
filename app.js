@@ -28,10 +28,22 @@ app.post('/reg_donor',(req,res)=>{
     var year = date.toLocaleString("default", { year: "numeric" });
     var month = date.toLocaleString("default", { month: "2-digit" });
     var day = date.toLocaleString("default", { day: "2-digit" });
-    var time=date.toLocaleString().substr(11,8);
-    if(time[0]==' '){
-        time[0]='0';
+    var timeNow=date.getTime()%86400;
+    var hh=timeNow/3600;
+    timeNow=timeNow%3600;
+    var mm=timeNow/60;
+    timeNow=timeNow%60;
+    var ss=timeNow.toString();
+    if(hh<10){
+        hh="0".concat(hh.toString());
     }
+    if(mm<10){
+        mm="0".concat(hh.toString());
+    }
+    if(ss<10){
+        ss="0".concat(ss.toString());
+    }
+    time=hh+':'+mm+':'+ss;
     console.log(time);
     var formattedDate = year + "-" + month + "-" + day;
     connection.query(`SELECT * from donor WHERE d_mail='${req.body.d_mail}'`,(err,rows,fileds)=>{
@@ -117,8 +129,9 @@ app.post('/reg_donor',(req,res)=>{
         }
     });
 });
-app.get('/get_transaction',(req,res)=>{
+app.get('/get_data',(req,res)=>{
     connection.query('SELECT * FROM t_history',(err,rows,cols)=>{
+        console.log(rows);
         res.json(rows);
     });
 });
@@ -128,14 +141,13 @@ app.post("/reg_patient",(req,res)=>{
     var year = date.toLocaleString("default", { year: "numeric" });
     var month = date.toLocaleString("default", { month: "2-digit" });
     var day = date.toLocaleString("default", { day: "2-digit" });
-    var time=date.toLocaleString().substring(11,8);
+    var time=date.toLocaleString().substr(11,8);
     if(time[0]==' '){
         time[0]='0';
     }
     var formattedDate = year + "-" + month + "-" + day;
         
-    connection.query(`INSERT INTO patient(p_name ,p_blood_grp , p_mail ,no_of_transactions ,p_dob date,p_age ,height , weight  ,p_gender) 
-    values('${req.body.p_name}','${req.body.p_blood_grp}','${req.body.p_mail}',${req.body.no_of_donations}, '${req.body.p_dob}',${req.body.p_age},${req.body.p_height},${req.body.p_weight},'${req.body.gender}');`,(err,status)=>{
+    connection.query(`INSERT INTO patient(p_name ,p_blood_grp , p_mail ,no_of_transactions ,p_dob ,p_age ,height , weight  ,p_gender) values('${req.body.p_name}','${req.body.p_blood_grp}','${req.body.p_mail}',${req.body.no_of_donations}, '${req.body.p_dob}',${req.body.p_age},${req.body.p_height},${req.body.p_weight},'${req.body.gender}');`,(err,status)=>{
         if(err){
             console.log(err);
         }
@@ -148,7 +160,7 @@ app.post("/reg_patient",(req,res)=>{
     });
     connection.query(`SELECT * from blood where blood_group='${req.p_blood_grp}'`,(err,rows,fields)=>{
         if(rows.length==0){        
-            connection.query(`INSERT INTO t_history(t_name,t_type,date_of_transaction,time_of_transaction,volume,status) values('${req.body.p_name}','DONATION','${formattedDate}','${time}',250,'FAILURE')`,(err,status)=>{
+            connection.query(`INSERT INTO t_history(t_name,t_type,date_of_transaction,time_of_transaction,volume,status) values('${req.body.p_name}','REQUEST','${formattedDate}','${time}',250,'FAILURE');`,(err,status)=>{
                 if(err) throw err;
                 else{
                     console.log(status);
@@ -163,7 +175,7 @@ app.post("/reg_patient",(req,res)=>{
                     console.log(status);
                 }
             })
-            connection.query(`INSERT INTO t_history(t_name,t_type,date_of_transaction,time_of_transaction,volume,status) values('${req.body.p_name}','DONATION','${formattedDate}','${time}',250,'SUCCESS')`,(err,status)=>{
+            connection.query(`INSERT INTO t_history(t_name,t_type,date_of_transaction,time_of_transaction,volume,status) values('${req.body.p_name}','REQUEST','${formattedDate}','${time}',250,'SUCCESS');`,(err,status)=>{
                 if(err) throw err;
                 else{
                     console.log(status);
@@ -173,6 +185,16 @@ app.post("/reg_patient",(req,res)=>{
         }
     });
 
+});
+app.post('/sign-in',(req,res)=>{
+    connection.query('SELECT * FROM admin',(err,rows,fields)=>{
+        if(rows[0].username==req.body.username && rows[0].password==req.body.password){
+            res.json(true);
+        }
+        else{
+            res.json(false);
+        }
+    })
 });
 app.listen(4000,()=>{
     console.log("Server up and running at http://localhost:4000"); 
